@@ -40,3 +40,4 @@ SQLAlchemy==2.0.35
 psycopg2==2.9.9
 scikit-learn==1.5.2
 openai==1.51.2
+matplotlib==3.9.2
