@@ -1,0 +1,80 @@
+{
+	"containerDefinitions": [
+		{
+			"essential": true,
+			"name": "analysis",
+			"image": "{{ ssm `/kotohiro-prd-analysis-rep/uri` }}:{{ must_env `IMAGE_TAG` }}",
+			"environment": [],
+			"secrets": [
+				{
+					"name": "DATABASE_URL",
+					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:DATABASE_URL::"
+				},
+				{
+					"name": "ANALYSIS_USER",
+					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:ANALYSIS_USER::"
+				},
+				{
+					"name": "ANALYSIS_USER_PASSWORD",
+					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:ANALYSIS_USER_PASSWORD::"
+				},
+				{
+					"name": "MODEL_ID",
+					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:MODEL_ID::"
+				}
+			],
+			"logConfiguration": {
+				"logDriver": "awslogs",
+				"options": {
+					"awslogs-group": "{{ ssm `/kotohiro-prd-analysis-log-group/name` }}",
+					"awslogs-region": "ap-northeast-1",
+					"awslogs-stream-prefix": "production"
+				}
+			},
+			"portMappings": [
+				{
+					"appProtocol": "http",
+					"containerPort": 8000,
+					"hostPort": 8000,
+					"protocol": "tcp"
+				}
+			],
+			"mountPoints": [
+				{
+					"readOnly": false,
+					"containerPath": "/var/lib/amazon",
+					"sourceVolume": "var-lib-amazon"
+				},
+				{
+					"readOnly": false,
+					"containerPath": "/var/log/amazon",
+					"sourceVolume": "var-log-amazon"
+				}
+			]
+		}
+	],
+	"cpu": "256",
+	"memory": "512",
+	"family": "kotohiro-prd-analysis",
+	"taskRoleArn": "{{ ssm `/kotohiro-prd-analysis-task-role/arn` }}",
+	"executionRoleArn": "{{ ssm `/kotohiro-prd-analysis-task-execution-role/arn` }}",
+	"networkMode": "awsvpc",
+	"requiresCompatibilities": ["FARGATE"],
+	"runtimePlatform": {
+		"cpuArchitecture": "ARM64"
+	},
+	"tags": [
+		{
+			"key": "Name",
+			"value": "kotohiro-prd-task-definition"
+		}
+	],
+	"volumes": [
+		{
+			"name": "var-lib-amazon"
+		},
+		{
+			"name": "var-log-amazon"
+		}
+	]
+}

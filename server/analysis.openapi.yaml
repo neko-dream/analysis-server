@@ -1,0 +1,159 @@
+openapi: 3.0.1
+info:
+  title: analysis
+  description: ''
+  version: 1.0.0
+tags: []
+paths:
+  /predicts/groups:
+    post:
+      summary: group予測
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                talk_session_id:
+                  type: string
+              required:
+                - user_id
+                - talk_session_id
+            examples:
+              '1':
+                value:
+                  user_id: '0'
+                  talk_session_id: '0'
+                description: ''
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security:
+        - basic: []
+  /reports/generates:
+    post:
+      summary: レポート作成
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                talk_session_id:
+                  type: string
+              required:
+                - talk_session_id
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security:
+        - basic: []
+  /test:
+    get:
+      summary: テストAPI
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    description: テキスト
+                    default: hello
+          headers: {}
+      security: []
+  /test-auth:
+    get:
+      summary: テスト認証API
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                    description: auth テキスト
+                    default: auth テキスト
+          headers: {}
+      security:
+        - basic: []
+  /reports/wordclouds:
+    post:
+      summary: ワードクラウドテスト
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                talk_session_id:
+                  type: string
+              required:
+                - talk_session_id
+            examples: {}
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  wordcloud:
+                    type: string
+                  tsne:
+                    type: string
+                required:
+                  - wordcloud
+                  - tsne
+          headers: {}
+      security:
+        - basic: []
+components:
+  schemas: {}
+  securitySchemes:
+    basic:
+      type: http
+      scheme: basic
+servers: []
+security: []

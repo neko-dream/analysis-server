@@ -1,0 +1,19 @@
+version: '3.6'
+services:
+  service:
+    build:
+      # context: .
+      dockerfile: ./server/Dockerfile
+      target: service
+    environment:
+      - ANALYSIS_USER=${ANALYSIS_USER}
+      - ANALYSIS_USER_PASSWORD=${ANALYSIS_USER_PASSWORD}
+      - DATABASE_URL=${KOTOHIRO_DATABASE_URL}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - MODEL_ID=${MODEL_ID}
+    ports:
+      - "8000:8000"
+    # command: uvicorn openapi_server.main:app --host 0.0.0.0 --port 8080

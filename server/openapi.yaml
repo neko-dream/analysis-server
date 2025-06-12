@@ -1,0 +1,177 @@
+openapi: 3.0.1
+info:
+  description: ""
+  title: analysis
+  version: 1.0.0
+servers:
+- url: /
+paths:
+  /predicts/groups:
+    post:
+      deprecated: false
+      description: ""
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            examples:
+              "1":
+                description: ""
+                value:
+                  user_id: "0"
+                  talk_session_id: "0"
+            schema:
+              $ref: '#/components/schemas/_predicts_groups_post_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties: {}
+                type: object
+          description: ""
+      security:
+      - basic: []
+      summary: group予測
+      tags: []
+  /reports/generates:
+    post:
+      deprecated: false
+      description: ""
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_reports_generates_post_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties: {}
+                type: object
+          description: ""
+      security:
+      - basic: []
+      summary: レポート作成
+      tags: []
+  /test:
+    get:
+      deprecated: false
+      description: ""
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_test_get_200_response'
+          description: ""
+      security: []
+      summary: テストAPI
+      tags: []
+  /test-auth:
+    get:
+      deprecated: false
+      description: ""
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_test_auth_get_200_response'
+          description: ""
+      security:
+      - basic: []
+      summary: テスト認証API
+      tags: []
+  /reports/wordclouds:
+    post:
+      deprecated: false
+      description: ""
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            examples: {}
+            schema:
+              $ref: '#/components/schemas/_reports_generates_post_request'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_reports_wordclouds_post_200_response'
+          description: ""
+      security:
+      - basic: []
+      summary: ワードクラウドテスト
+      tags: []
+components:
+  schemas:
+    _predicts_groups_post_request:
+      properties:
+        user_id:
+          title: user_id
+          type: string
+        talk_session_id:
+          title: talk_session_id
+          type: string
+      required:
+      - talk_session_id
+      - user_id
+      title: _predicts_groups_post_request
+      type: object
+    _reports_generates_post_request:
+      properties:
+        talk_session_id:
+          title: talk_session_id
+          type: string
+      required:
+      - talk_session_id
+      title: _reports_generates_post_request
+      type: object
+    _test_get_200_response:
+      example:
+        text: hello
+      properties:
+        text:
+          default: hello
+          description: テキスト
+          title: text
+          type: string
+      title: _test_get_200_response
+      type: object
+    _test_auth_get_200_response:
+      example:
+        text: auth テキスト
+      properties:
+        text:
+          default: auth テキスト
+          description: auth テキスト
+          title: text
+          type: string
+      title: _test_auth_get_200_response
+      type: object
+    _reports_wordclouds_post_200_response:
+      example:
+        tsne: tsne
+        wordcloud: wordcloud
+      properties:
+        wordcloud:
+          title: wordcloud
+          type: string
+        tsne:
+          title: tsne
+          type: string
+      required:
+      - tsne
+      - wordcloud
+      title: _reports_wordclouds_post_200_response
+      type: object
+  securitySchemes:
+    basic:
+      scheme: basic
+      type: http
