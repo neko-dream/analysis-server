@@ -1,9 +1,10 @@
-from openapi_server.data_models.models import Opinions, RepresentativeOpinions, TalkSessionReportHistories, TalkSessions, TalkSessionReports
+from openapi_server.data_models.models import Opinions, Votes, RepresentativeOpinions, TalkSessionReportHistories, TalkSessions, TalkSessionReports
 from openapi_server.models.reports_generates_post_request import ReportsGeneratesPostRequest
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy import create_engine
 from sqlalchemy import select, insert
+from sqlalchemy.sql import func
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 
@@ -44,6 +45,52 @@ def completion(new_message_text:str, settings_text:str = '', past_messages:list 
     return response_message_text, past_messages
 
 
+def opinion_vote_rank(Session, talk_session_id: str):
+    with Session() as session:
+        vote_ranking_silver = session.query(
+                    Votes.opinion_id,
+                    func.max(Opinions.content).label('content'),
+                    func.count(Votes.user_id).label('agree_count')
+                ).\
+                join(Opinions, Opinions.opinion_id == Votes.opinion_id).\
+                where(
+                    Votes.talk_session_id == talk_session_id,
+                    Votes.vote_type == 1
+                ).\
+                group_by(Votes.opinion_id).\
+                subquery()
+        result = session.query(
+                    vote_ranking_silver.c.opinion_id,
+                    vote_ranking_silver.c.content,
+                    vote_ranking_silver.c.agree_count,
+                    func.dense_rank().\
+                        over(order_by=vote_ranking_silver.c.agree_count.desc()).label("dense_rank")
+                ).\
+                order_by(vote_ranking_silver.c.agree_count.desc()).\
+                all()
+        count = 0
+        candidate_opinions_prepare = [[] for i in range(3)]
+        rank_counts = [0 for i in range(3)]
+        for row in result:
+            content = row.content
+            dense_rank = row.dense_rank
+            agree_count = row.agree_count
+            count += 1
+            if dense_rank <= 3 and agree_count > 1:
+                candidate_opinions_prepare[dense_rank - 1].append((content, agree_count, dense_rank))
+                rank_counts[dense_rank - 1] += 1
+
+        total_value = 0
+        candidate_opinions = []
+        for rank in range(3):
+            if total_value + rank_counts[rank] > 3 and rank != 0:
+                break
+            else:
+                candidate_opinions = [*candidate_opinions, *candidate_opinions_prepare[rank]]
+                total_value += rank_counts[rank]
+
+        return candidate_opinions
+
 def prepare_dataset(session, talk_session_id: str):
     Session = session
     theme = ''
@@ -78,6 +125,13 @@ def prepare_dataset(session, talk_session_id: str):
         theme = talk_session_row.theme
         description = talk_session_row.description
 
+    candidate_opinons = opinion_vote_rank(Session=Session, talk_session_id=talk_session_id)
+    candidate_opinons_contents = candidate_opinons
+    # if len(candidate_opinons) <= 5:
+    #     print('レポートとして使う?')
+    # print('-----candidate_opinons')
+    # print(candidate_opinons)
+
     template_summarize = f"""
     # テーマ: {theme}
 
@@ -86,6 +140,19 @@ def prepare_dataset(session, talk_session_id: str):
     {description}
     ```
 
+    ## 全体でみた「良さそう」が多かった3位までの意見
+    ### データの型形式
+    list[tuple(text, int, int)]
+    それぞれの定義は
+    tuple[0] := 実際の意見
+    tuple[1] := 「良さそう」とされた数
+    tuple[2] := 実際の順位
+    ### 実際のデータ
+    ```
+    {candidate_opinons_contents}
+    ```
+
+    # テーブルデータ
     下記はセッションの中の一部の代表意見をグループごとに抽出したcsvのテーブルデータです。
     それぞれカラムの説明をします。\n
     group_name: グループ名\n
@@ -112,12 +179,14 @@ def prepare_dataset(session, talk_session_id: str):
     - グループ名も付与してかつグループを一言でまとめた段落にする
     - テーマと分析結果をもとにタイトルを考えてください
     - 全体的な課題の段落も作ってください
+    - グループごとの要約の前の段落に「全体でみた「良さそう」が多かった3位までの意見」の要約も追加してください（要約されていることの注意書きも追記してください）
     - 最後にまとめを書いてください
     - rankの具体的な数字は文章に表さなくて大丈夫ですが、それぞれの代表意見を考慮してグループごとに考察もあるとより良いです
     markdownを用いてブログ記事風にレポートをまとめてください。
 
     """
     summarize_text, past = completion(template_summarize, '', [])
+    # print(f"text: {summarize_text}")
 
     with Session() as session:
         now = datetime.now()
