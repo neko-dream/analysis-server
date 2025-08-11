@@ -56,8 +56,8 @@
 	"cpu": "256",
 	"memory": "512",
 	"family": "kotohiro-prd-analysis",
-	"taskRoleArn": "{{ ssm `/kotohiro-prd-analysis-task-role/arn` }}",
-	"executionRoleArn": "{{ ssm `/kotohiro-prd-analysis-task-execution-role/arn` }}",
+	"taskRoleArn": "{{ ssm `/kotohiro-prd-task-role/arn` }}",
+	"executionRoleArn": "{{ ssm `/kotohiro-prd-task-execution-role/arn` }}",
 	"networkMode": "awsvpc",
 	"requiresCompatibilities": ["FARGATE"],
 	"runtimePlatform": {
