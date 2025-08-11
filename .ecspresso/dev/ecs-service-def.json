@@ -1,0 +1,56 @@
+{
+	"deploymentConfiguration": {
+		"alarms": {
+			"alarmNames": ["rollback-alert"],
+			"enable": true,
+			"rollback": true
+		},
+		"deploymentCircuitBreaker": {
+			"enable": true,
+			"rollback": true
+		},
+		"maximumPercent": 200,
+		"minimumHealthyPercent": 100
+	},
+	"healthCheckGracePeriodSeconds": 60,
+	"deploymentController": {
+		"type": "ECS"
+	},
+	"capacityProviderStrategy": [
+		{
+			"capacityProvider": "FARGATE",
+			"base": 1,
+			"weight": 1
+		}
+	],
+	"loadBalancers": [
+		{
+			"containerName": "analysis",
+			"containerPort": 8000,
+			"targetGroupArn": "{{ ssm `/kotohiro-dev-analysis-tg/arn` }}"
+		}
+	],
+	"networkConfiguration": {
+		"awsvpcConfiguration": {
+			"assignPublicIp": "ENABLED",
+			"securityGroups": ["{{ ssm `/kotohiro-dev-analysis-sg/id`}}"],
+			"subnets": [
+				"{{ ssm `/kotohiro-dev-public-subnet/0/id` }}",
+				"{{ ssm `/kotohiro-dev-public-subnet/1/id` }}"
+			]
+		}
+	},
+	"enableECSManagedTags": false,
+	"enableExecuteCommand": true,
+	"desiredCount": 1,
+	"schedulingStrategy": "REPLICA",
+	"platformVersion": "LATEST",
+	"platformFamily": "Linux",
+	"propagateTags": "NONE",
+	"tags": [
+		{
+			"key": "Name",
+			"value": "kotohiro-dev-analysis"
+		}
+	]
+}
