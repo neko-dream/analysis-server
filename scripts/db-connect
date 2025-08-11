@@ -99,7 +99,7 @@ echo "タスクID: $id"
 echo "ポートフォワード開始..."
 echo "localhost:5432 → ${RDS_ENDPOINT}:${RDS_PORT}"
 
-ecspresso exec --config ./.ecspresso/api/${ENV}/ecspresso.yml \
+ecspresso exec --config ./.ecspresso/${ENV}/ecspresso.yml \
     --port-forward -L 5432:${RDS_ENDPOINT}:${RDS_PORT} --id $id &
 
 PF_PID=$!
