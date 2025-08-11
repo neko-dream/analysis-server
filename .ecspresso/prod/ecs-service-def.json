@@ -32,11 +32,11 @@
 	],
 	"networkConfiguration": {
 		"awsvpcConfiguration": {
-			"assignPublicIp": "DISABLED",
+			"assignPublicIp": "ENABLED",
 			"securityGroups": ["{{ ssm `/kotohiro-prd-analysis-sg/id`}}"],
 			"subnets": [
-				"{{ ssm `/kotohiro-prd-private-subnet/0/id` }}",
-				"{{ ssm `/kotohiro-prd-private-subnet/1/id` }}"
+				"{{ ssm `/kotohiro-prd-public-subnet/0/id` }}",
+				"{{ ssm `/kotohiro-prd-public-subnet/1/id` }}"
 			]
 		}
 	},
