@@ -29,9 +29,9 @@ TIMESTAMP=$(date '+%s%3')
 export IMAGE_TAG=$COMMIT_HASH$TIMESTAMP
 
 if [ "$ENV" = "prod" ]; then
-    ECR_REPO="kotohiro-prd-api"
+    ECR_REPO="kotohiro-prd-analysis"
 else
-    ECR_REPO="kotohiro-dev-api"
+    ECR_REPO="kotohiro-dev-analysis"
 fi
 
 TAG=$ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG
