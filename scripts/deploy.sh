@@ -34,10 +34,6 @@ else
     ECR_REPO="kotohiro-dev-api"
 fi
 
-if [ -z "$ECR_REPO_URI" ]; then
-    echo "Failed to get ECR repository URI from SSM parameter" >&2
-    exit 1
-fi
 TAG=$ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
 docker build -f server/Dockerfile . -t $TAG --no-cache
