@@ -140,3 +140,4 @@ echo ""
 psql "postgresql://${RDS_USERNAME}:$(urlencode "$RDS_PASSWORD")@localhost:${RDS_PORT}/${RDS_DATABASE}" "$@"
 
 echo ""
+kill $PF_PID &2>/dev/null
