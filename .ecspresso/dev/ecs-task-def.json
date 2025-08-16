@@ -3,32 +3,32 @@
 		{
 			"essential": true,
 			"name": "analysis",
-			"image": "{{ ssm `/kotohiro-prd-analysis-rep/uri` }}:{{ must_env `IMAGE_TAG` }}",
+			"image": "{{ ssm `/kotohiro-dev-analysis-rep/uri` }}:{{ must_env `IMAGE_TAG` }}",
 			"environment": [],
 			"secrets": [
 				{
 					"name": "DATABASE_URL",
-					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:DATABASE_URL::"
+					"valueFrom": "{{ ssm `/kotohiro-dev-app-secret/arn` }}:DATABASE_URL::"
 				},
 				{
 					"name": "ANALYSIS_USER",
-					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:ANALYSIS_USER::"
+					"valueFrom": "{{ ssm `/kotohiro-dev-app-secret/arn` }}:ANALYSIS_USER::"
 				},
 				{
 					"name": "ANALYSIS_USER_PASSWORD",
-					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:ANALYSIS_USER_PASSWORD::"
+					"valueFrom": "{{ ssm `/kotohiro-dev-app-secret/arn` }}:ANALYSIS_USER_PASSWORD::"
 				},
 				{
 					"name": "MODEL_ID",
-					"valueFrom": "{{ ssm `/kotohiro-prd-app-secret/arn` }}:MODEL_ID::"
+					"valueFrom": "{{ ssm `/kotohiro-dev-app-secret/arn` }}:MODEL_ID::"
 				}
 			],
 			"logConfiguration": {
 				"logDriver": "awslogs",
 				"options": {
-					"awslogs-group": "{{ ssm `/kotohiro-prd-analysis-log-group/name` }}",
+					"awslogs-group": "{{ ssm `/kotohiro-dev-analysis-log-group/name` }}",
 					"awslogs-region": "ap-northeast-1",
-					"awslogs-stream-prefix": "production"
+					"awslogs-stream-prefix": "development"
 				}
 			},
 			"portMappings": [
@@ -55,9 +55,9 @@
 	],
 	"cpu": "256",
 	"memory": "512",
-	"family": "kotohiro-prd-analysis",
-	"taskRoleArn": "{{ ssm `/kotohiro-prd-task-role/arn` }}",
-	"executionRoleArn": "{{ ssm `/kotohiro-prd-task-execution-role/arn` }}",
+	"family": "kotohiro-dev-analysis",
+	"taskRoleArn": "{{ ssm `/kotohiro-dev-task-role/arn` }}",
+	"executionRoleArn": "{{ ssm `/kotohiro-dev-task-execution-role/arn` }}",
 	"networkMode": "awsvpc",
 	"requiresCompatibilities": ["FARGATE"],
 	"runtimePlatform": {
@@ -66,7 +66,7 @@
 	"tags": [
 		{
 			"key": "Name",
-			"value": "kotohiro-prd-task-definition"
+			"value": "kotohiro-dev-task-definition"
 		}
 	],
 	"volumes": [

@@ -27,16 +27,16 @@
 		{
 			"containerName": "analysis",
 			"containerPort": 8000,
-			"targetGroupArn": "{{ ssm `/kotohiro-prd-analysis-tg/arn` }}"
+			"targetGroupArn": "{{ ssm `/kotohiro-dev-analysis-tg/arn` }}"
 		}
 	],
 	"networkConfiguration": {
 		"awsvpcConfiguration": {
 			"assignPublicIp": "ENABLED",
-			"securityGroups": ["{{ ssm `/kotohiro-prd-analysis-sg/id`}}"],
+			"securityGroups": ["{{ ssm `/kotohiro-dev-analysis-sg/id`}}"],
 			"subnets": [
-				"{{ ssm `/kotohiro-prd-public-subnet/0/id` }}",
-				"{{ ssm `/kotohiro-prd-public-subnet/1/id` }}"
+				"{{ ssm `/kotohiro-dev-public-subnet/0/id` }}",
+				"{{ ssm `/kotohiro-dev-public-subnet/1/id` }}"
 			]
 		}
 	},
@@ -50,7 +50,7 @@
 	"tags": [
 		{
 			"key": "Name",
-			"value": "kotohiro-prd-analysis"
+			"value": "kotohiro-dev-analysis"
 		}
 	]
 }
