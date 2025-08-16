@@ -31,3 +31,15 @@ urlencode() {
     done
     echo "${encoded}"
 }
+
+find_project_root() {
+    local current_dir="$SCRIPT_DIR"
+    while [ "$current_dir" != "/" ]; do
+        if [ -d "$current_dir/.ecspresso" ]; then
+            echo "$current_dir"
+            return 0
+        fi
+        current_dir="$(dirname "$current_dir")"
+    done
+    return 1
+}

@@ -16,7 +16,15 @@ fi
 ENV="$1"
 shift  # 最初の引数（環境）を削除して、残りをpsqlに渡す
 
-source scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/utils.sh"
+
+PROJECT_ROOT=$(find_project_root)
+if [ -z "$PROJECT_ROOT" ]; then
+    echo "エラー: .ecspressoディレクトリが見つかりません"
+    echo "プロジェクトのルートディレクトリに.ecspressoディレクトリが存在することを確認してください"
+    exit 1
+fi
 
 ACCOUNT_ID=$(login_aws $AWS_PROFILE)
 if [ -z "$ACCOUNT_ID" ]; then
@@ -49,6 +57,14 @@ case "$ENV" in
         exit 1
         ;;
 esac
+
+ECSPRESSO_CONFIG="${PROJECT_ROOT}/.ecspresso/${ENV}/ecspresso.yml"
+# 設定ファイルの存在確認
+if [ ! -f "$ECSPRESSO_CONFIG" ]; then
+    echo "エラー: ecspresso設定ファイルが見つかりません: $ECSPRESSO_CONFIG"
+    exit 1
+fi
+echo "$ECSPRESSO_CONFIG"
 
 echo "SSMからシークレットARNを取得中..."
 SECRET_ARN=$(aws ssm get-parameter --name "$SSM_PARAM_NAME" --query 'Parameter.Value' --output text 2>/dev/null)
@@ -84,7 +100,7 @@ fi
 
 echo "${ENV}環境のECSタスクを検索中..."
 id=$(
-    ecspresso tasks --config ./.ecspresso/api/${ENV}/ecspresso.yml --output=json 2>/dev/null | \
+    ecspresso tasks --config "$ECSPRESSO_CONFIG" --output=json 2>/dev/null | \
     jq -r '.containers[0].taskArn | split("/")[2]' | \
     head -1
 )
@@ -99,7 +115,7 @@ echo "タスクID: $id"
 echo "ポートフォワード開始..."
 echo "localhost:5432 → ${RDS_ENDPOINT}:${RDS_PORT}"
 
-ecspresso exec --config ./.ecspresso/${ENV}/ecspresso.yml \
+ecspresso exec --config "$ECSPRESSO_CONFIG" \
     --port-forward -L 5432:${RDS_ENDPOINT}:${RDS_PORT} --id $id &
 
 PF_PID=$!

@@ -13,7 +13,22 @@ if [ "$ENV" != "dev" ] && [ "$ENV" != "prod" ]; then
     exit 1
 fi
 
-source scripts/utils.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/utils.sh"
+
+PROJECT_ROOT=$(find_project_root)
+if [ -z "$PROJECT_ROOT" ]; then
+    echo "エラー: .ecspressoディレクトリが見つかりません"
+    echo "プロジェクトのルートディレクトリに.ecspressoディレクトリが存在することを確認してください"
+    exit 1
+fi
+
+ECSPRESSO_CONFIG="${PROJECT_ROOT}/.ecspresso/${ENV}/ecspresso.yml"
+# 設定ファイルの存在確認
+if [ ! -f "$ECSPRESSO_CONFIG" ]; then
+    echo "エラー: ecspresso設定ファイルが見つかりません: $ECSPRESSO_CONFIG"
+    exit 1
+fi
 
 export ACCOUNT_ID=$(login_aws $AWS_PROFILE)
 if [ -z "$ACCOUNT_ID" ]; then
@@ -39,4 +54,4 @@ TAG=$ACCOUNT_ID.dkr.ecr.ap-northeast-1.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 docker build -f server/Dockerfile . -t $TAG --no-cache
 docker push $TAG
 
-ecspresso deploy --config ./.ecspresso/$ENV/ecspresso.yml --force-new-deployment
+ecspresso deploy --config "$ECSPRESSO_CONFIG" --force-new-deployment
