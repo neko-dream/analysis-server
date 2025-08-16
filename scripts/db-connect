@@ -124,6 +124,10 @@ if ! kill -0 $PF_PID 2>/dev/null; then
     echo "エラー: ポートフォワードの開始に失敗しました"
     exit 1
 fi
+cleanup() {
+    kill $PF_PID 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
 
 # ポートフォワードが確立されるまで待機
 echo "接続待機中..."
@@ -156,4 +160,3 @@ echo ""
 psql "postgresql://${RDS_USERNAME}:$(urlencode "$RDS_PASSWORD")@localhost:${RDS_PORT}/${RDS_DATABASE}" "$@"
 
 echo ""
-kill $PF_PID &2>/dev/null
