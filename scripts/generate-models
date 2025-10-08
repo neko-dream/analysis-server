@@ -1,0 +1,169 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "エラー: 環境を指定してください"
+    echo "使い方: $0 <dev|prd>"
+    echo "例: "
+    echo "  $0 dev      # dev環境のDBからmodels.pyを生成"
+    echo "  $0 prd      # prd環境のDBからmodels.pyを生成"
+    exit 1
+fi
+
+ENV="$1"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/utils.sh"
+
+PROJECT_ROOT=$(find_project_root)
+if [ -z "$PROJECT_ROOT" ]; then
+    echo "エラー: .ecspressoディレクトリが見つかりません"
+    echo "プロジェクトのルートディレクトリに.ecspressoディレクトリが存在することを確認してください"
+    exit 1
+fi
+
+ACCOUNT_ID=$(login_aws $AWS_PROFILE)
+if [ -z "$ACCOUNT_ID" ]; then
+    echo "AWS認証に失敗しました" >&2
+    exit 1
+fi
+
+case "$ENV" in
+    "dev")
+        SSM_PARAM_NAME="/kotohiro-dev-db-secret/arn"
+        ;;
+    "prd"|"prod")
+        SSM_PARAM_NAME="/kotohiro-prd-db-secret/arn"
+
+        echo "⚠️  注意: 本番環境のデータベースからモデルを生成しようとしています！"
+        echo -n "本当に実行しますか？ (yes/no): "
+        read confirmation
+
+        if [ "$confirmation" != "yes" ]; then
+            echo "実行をキャンセルしました"
+            exit 0
+        fi
+        ENV="prd"
+        ;;
+    *)
+        echo "エラー: '$ENV' は無効な環境です"
+        echo "有効な環境: dev, prd (または prod)"
+        exit 1
+        ;;
+esac
+
+ECSPRESSO_CONFIG="${PROJECT_ROOT}/.ecspresso/${ENV}/ecspresso.yml"
+# 設定ファイルの存在確認
+if [ ! -f "$ECSPRESSO_CONFIG" ]; then
+    echo "エラー: ecspresso設定ファイルが見つかりません: $ECSPRESSO_CONFIG"
+    exit 1
+fi
+
+SECRET_ARN=$(aws ssm get-parameter --name "$SSM_PARAM_NAME" --query 'Parameter.Value' --output text 2>/dev/null)
+
+if [ $? -ne 0 ] || [ -z "$SECRET_ARN" ]; then
+    echo "エラー: SSMパラメータの取得に失敗しました"
+    echo "パラメータ名: $SSM_PARAM_NAME"
+    echo "AWS認証情報とパラメータ名を確認してください"
+    exit 1
+fi
+
+SECRET=$(aws secretsmanager get-secret-value --secret-id $SECRET_ARN --query 'SecretString' --output text 2>/dev/null)
+
+if [ $? -ne 0 ]; then
+    echo "エラー: Secrets Managerからの取得に失敗しました"
+    echo "AWS認証情報と権限を確認してください"
+    exit 1
+fi
+
+RDS_ENDPOINT=$(echo $SECRET | jq -r '.host // .endpoint // .address')
+RDS_PORT=$(echo $SECRET | jq -r '.port // "5432"')
+RDS_USERNAME=$(echo $SECRET | jq -r '.username // .user')
+RDS_PASSWORD=$(echo $SECRET | jq -r '.password')
+RDS_DATABASE=$(echo $SECRET | jq -r '.database // .dbname // .engine')
+
+if [ -z "$RDS_ENDPOINT" ] || [ "$RDS_ENDPOINT" = "null" ]; then
+    echo "エラー: RDSエンドポイントが見つかりません"
+    echo "利用可能なキー:"
+    echo $SECRET | jq -r 'keys[]'
+    exit 1
+fi
+
+echo "${ENV}環境のECSタスクを検索中..."
+id=$(
+    ecspresso tasks --config "$ECSPRESSO_CONFIG" --output=json 2>/dev/null | \
+    jq -r '.containers[0].taskArn | split("/")[2]' | \
+    head -1
+)
+
+if [ -z "$id" ]; then
+    echo "エラー: ${ENV}環境で実行中のECSタスクが見つかりません"
+    echo "タスクが起動していることを確認してください"
+    exit 1
+fi
+
+echo "タスクID: $id"
+echo "ポートフォワード開始..."
+echo "localhost:5432 → ${RDS_ENDPOINT}:${RDS_PORT}"
+
+ecspresso exec --config "$ECSPRESSO_CONFIG" \
+    --port-forward -L 5432:${RDS_ENDPOINT}:${RDS_PORT} --id $id &
+
+PF_PID=$!
+
+if ! kill -0 $PF_PID 2>/dev/null; then
+    echo "エラー: ポートフォワードの開始に失敗しました"
+    exit 1
+fi
+
+cleanup() {
+    echo "ポートフォワードを終了中..."
+    kill $PF_PID 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+for i in {1..10}; do
+    if nc -z localhost 5432 2>/dev/null; then
+        break
+    fi
+    if [ $i -eq 10 ]; then
+        echo "エラー: ポートフォワードの確立に失敗しました"
+        kill $PF_PID 2>/dev/null
+        exit 1
+    fi
+    sleep 1
+done
+
+sleep 2
+
+echo ""
+echo "======================================="
+echo "環境: $ENV"
+echo "DB名: $RDS_DATABASE"
+echo "ユーザー: $RDS_USERNAME"
+echo "======================================="
+echo ""
+
+KOTOHIRO_POSTGRESQL="postgresql://${RDS_USERNAME}:$(urlencode "$RDS_PASSWORD")@localhost:${RDS_PORT}/${RDS_DATABASE}"
+
+echo "sqlacodegenを実行してmodels.pyを生成中..."
+echo "出力先: ${PROJECT_ROOT}/models.py"
+
+# sqlacodegenを実行
+if command -v sqlacodegen >/dev/null 2>&1; then
+    sqlacodegen "$KOTOHIRO_POSTGRESQL" > "${PROJECT_ROOT}/models.py"
+
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "models.pyの生成が完了しました"
+        echo "ファイルパス: ${PROJECT_ROOT}/models.py"
+    else
+        echo "models.pyの生成に失敗しました"
+        exit 1
+    fi
+else
+    echo "sqlacodegenがインストールされていません"
+    echo "インストール方法: pip install sqlacodegen"
+    exit 1
+fi
+
+echo ""
